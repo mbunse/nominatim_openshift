@@ -19,12 +19,14 @@ USER root
 #TODO: postgis add to postgres image install postgis postgis-utils
 
 ENV APP_ROOT=/opt/app-root \
-    HOME=/opt/app-root
+    HOME=/opt/app-root/Nominatim-3.1.0/build \
+    OSM_FLAT_FILE=/var/lib/nominatim/data
 
-WORKDIR $HOME
+WORKDIR ${APP_ROOT}
 
 ENV SUMMARY="Nominatm" \
-    DESCRIPTION="Nominatim"
+    DESCRIPTION="Nominatim" \
+    PBF_DATA=http://download.geofabrik.de/europe/monaco-latest.osm.pbf
 
 LABEL summary="$SUMMARY" \
       description="$DESCRIPTION" \
@@ -87,55 +89,30 @@ RUN yum install -y yum-utils && \
 RUN useradd -u 30 -g root nominatim
 
 RUN mkdir -p /var/lib/pgsql/data && \
+    mkdir -p /var/lib/nominatim/data && \
+    mkdir -p /opt/app-root && \
     /usr/libexec/fix-permissions /var/lib/pgsql && \
+    /usr/libexec/fix-permissions /var/lib/nominatim/data && \
     /usr/libexec/fix-permissions /var/run/postgresql && \
-    /usr/libexec/fix-permissions /run/httpd
-RUN mkdir -p /opt/app-root
-RUN chmod g+rw /opt/app-root
+    /usr/libexec/fix-permissions /run/httpd && \
+    /usr/libexec/fix-permissions ${APP_ROOT} && \
+    usermod -a -G root postgres
 
-# BUILD
+# BUILD nominatim
 RUN curl -L -f https://nominatim.org/release/Nominatim-3.1.0.tar.bz2 > Nominatim.tar.bz2 && \
     tar xvf Nominatim.tar.bz2
 
-RUN cd Nominatim-3.1.0 && \
-    mkdir build && cd build && cmake .. 
+RUN mkdir -p Nominatim-3.1.0/build
 
-RUN cd Nominatim-3.1.0/build && \
-    make && cd .. && mv build/* ${APP_ROOT}/
+WORKDIR ${HOME}
+RUN cmake .. && make
 
 COPY root /
 RUN chmod a+x /usr/libexec/* /usr/bin/run-nominatim
 
-ENV PGDATA=/var/lib/pgsql/data
+RUN /usr/libexec/httpd-prepare && /usr/libexec/nominatim-prepare
 
-# {APP_DATA} needs to be accessed by postgres user while s2i assembling
-# postgres user changes permissions of files in APP_DATA during assembling
-# Usermod fügt postgres der root gruppe hinzu. Der Container User gehört zur root Gruppe!
-RUN /usr/libexec/fix-permissions ${APP_ROOT} && \
-    usermod -a -G root postgres
-
-# Reset permissions of filesystem to default values
-RUN /usr/libexec/httpd-prepare
-
+# Nominatim user
 USER 30
 
-ENV PBF_DATA=http://download.geofabrik.de/europe/monaco-latest.osm.pbf
-# Start DB
-
 CMD ["/usr/bin/run-nominatim"]
-# initdb
-# echo 9.6 > $HOME/data/userdata/PG_VERSION
-
-# RUN /usr/bin/run-postgresql
-
-# ARG PBF_DATA=http://download.geofabrik.de/europe/monaco-latest.osm.pbf
-# RUN curl -L -f $PBF_DATA --create-dirs -o data.osm.pbf
-
-# RUN ./utils/setup.php --osm-file data.osm.pbf --all 
-# #2>&1 | tee setup.log
-
-# #VOLUME ["${APP_DATA}/data"] 
-
-# CMD ["/usr/bin/run-httpd"]
-#CMD ["/usr/bin/bash"]
-

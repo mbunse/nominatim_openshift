@@ -1,8 +1,13 @@
 #!/bin/bash
 
-initdb -E UTF8
+export PGDATA=/var/lib/pgsql/data
 
-pg_ctl -D /var/lib/pgsql/data -l logfile start
+# Only initdb if directory is empty
+if [ -z "$(ls -A $PGDATA)" ]; then
+    initdb -E UTF8
+fi
+
+pg_ctl -w -D /var/lib/pgsql/data -l logfile start
 createuser apache
 
 curl -L -f $PBF_DATA --create-dirs -o data.osm.pbf

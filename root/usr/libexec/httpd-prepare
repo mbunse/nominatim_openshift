@@ -3,11 +3,9 @@
 mkdir -p ${APP_ROOT}/etc/httpd.d
 chmod -R a+rwx /etc/httpd/conf
 chmod -R a+rwx /etc/httpd/conf.d
-chmod -R a+r   /etc/pki/tls/certs/localhost.crt
-chmod -R a+r   /etc/pki/tls/private/localhost.key
 mkdir -p ${APP_ROOT}etc
 chmod -R a+rwx ${APP_ROOT}/etc
-chmod -R a+rwx /var/www/httpd
+# chmod -R a+rwx /var/www/httpd
 chown -R nominatim:0 ${APP_ROOT}
 chown -R nominatim:0 /var/www
 chown -R nominatim:0 /var/log/httpd
@@ -15,12 +13,12 @@ chown -R nominatim:0 /var/log/httpd
 mkdir -p ${HTTPD_CONTAINER_SCRIPTS_PATH}/pre-init
 
 cat << EOF > /etc/httpd/conf.d/nominatim.conf 
-<Directory "${APP_ROOT}/website">
+<Directory "${HOME}/website">
   Options FollowSymLinks MultiViews
   AddType text/html   .php
   DirectoryIndex search.php
   Require all granted
 </Directory>
 
-Alias /nominatim ${APP_ROOT}/website
+Alias /nominatim ${HOME}/website
 EOF
