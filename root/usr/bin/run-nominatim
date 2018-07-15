@@ -1,13 +1,23 @@
 #!/bin/bash
 
-export PGDATA=/var/lib/pgsql/data
+# postgres needs user in /etx/passwd
+# Fix from https://docs.openshift.com/container-platform/3.9/creating_images/guidelines.html
+if ! whoami &> /dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "${USER_NAME:-nominatim}:x:$(id -u):0:${USER_NAME:-nominatim} user:${HOME}:/sbin/nologin" >> /etc/passwd
+  fi
+fi
+
+# create a subdirectory that the user owns
+export PGDATA=/var/lib/pgsql/data/userdata
+mkdir -p $PGDATA
 
 # Only initdb if directory is empty
 if [ -z "$(ls -A $PGDATA)" ]; then
     initdb -E UTF8
 fi
 
-pg_ctl -w -D /var/lib/pgsql/data -l logfile start
+pg_ctl -w -D $PGDATA -l logfile start
 createuser apache
 
 curl -L -f $PBF_DATA --create-dirs -o data.osm.pbf
