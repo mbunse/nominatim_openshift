@@ -16,12 +16,16 @@ mkdir -p $PGDATA
 if [ -z "$(ls -A $PGDATA)" ]; then
     initdb -E UTF8
 fi
+pg_ctl stop
 
 pg_ctl -w -D $PGDATA -l logfile start
 createuser apache
 
-curl -L -f $PBF_DATA --create-dirs -o data.osm.pbf
-./utils/setup.php --osm-file data.osm.pbf --all 
+if [ ! -f ${PBF_DIR}/data.osm.pbf ]; then
+  curl -L -f $PBF_DATA --create-dirs -o ${PBF_DIR}/data.osm.pbf
+fi
+
+./utils/setup.php --osm-file ${PBF_DIR}/data.osm.pbf --all 
 
 HTTPD_CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/httpd/ \
 HTTPD_APP_ROOT=${APP_ROOT} \

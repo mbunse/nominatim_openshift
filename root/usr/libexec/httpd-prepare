@@ -6,9 +6,11 @@ chmod -R a+rwx /etc/httpd/conf.d
 mkdir -p ${APP_ROOT}etc
 chmod -R a+rwx ${APP_ROOT}/etc
 # chmod -R a+rwx /var/www/httpd
-chown -R nominatim:0 ${APP_ROOT}
-chown -R nominatim:0 /var/www
-chown -R nominatim:0 /var/log/httpd
+chown -R postgres:0 ${APP_ROOT}
+chown -R postgres:0 /var/www
+chmod g+rwx /var/www
+chown -R postgres:0 /var/log/httpd
+chmod g+rwx /var/log/httpd
 
 mkdir -p ${HTTPD_CONTAINER_SCRIPTS_PATH}/pre-init
 

@@ -30,5 +30,32 @@ should return something like
 # Build with OpenShift
 ```
 oc new-build --strategy docker --binary --docker-image centos:7 --name nominatim
+# Alternative: oc new-build --strategy docker --binary --docker-image centos/s2i-core-centos7 --name nominatim
 oc start-build nominatim --from-dir . --follow
+```
+
+## Mount volumes
+
+```
+oc set volume dc/nominatim --add --name=pbf-data --claim-name=pbf-data --mount-path=/var/lib/nominatim/pbf
+oc set volume dc/nominatim --add --name=osm-pgs --claim-name=osm-pgs --mount-path=/var/lib/pgsql/data
+oc set volume dc/nominatim --add --name=osm-flat-file --claim-name=osm-flat-file --mount-path=/var/lib/nominatim/data
+```
+
+## Clear Volumes
+
+see https://blog.openshift.com/transferring-files-in-and-out-of-containers-in-openshift-part-3/
+
+```
+oc run dummy --image centos/httpd-24-centos7
+# Wait for rollout to finish
+oc rollout status dc/dummy
+# Mount persistent volume
+oc set volume dc/dummy --add --name=tmp-mount --claim-name=osm-psg --mount-path=/mnt
+# Wait for rollout to finish
+oc rollout status dc/dummy
+# Get pod
+oc get pods
+# ssh on pod
+oc rsh dummy-2-vzxh5
 ```

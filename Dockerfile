@@ -3,7 +3,8 @@ USER root
 
 ENV APP_ROOT=/opt/app-root \
     HOME=/opt/app-root/Nominatim-3.1.0/build \
-    OSM_FLAT_FILE=/var/lib/nominatim/data
+    OSM_FLAT_FILE=/var/lib/nominatim/data \
+    PBF_DIR=/var/lib/nominatim/pbf
 
 WORKDIR ${APP_ROOT}
 
@@ -39,14 +40,18 @@ RUN yum install -y yum-utils && \
 #RUN useradd -u 30 -g root nominatim
 
 RUN mkdir -p /var/lib/pgsql/data && \
-    mkdir -p /var/lib/nominatim/data && \
+    mkdir -p ${OSM_FLAT_FILE} && \
+    mkdir -p ${PBF_DIR} && \
     mkdir -p /opt/app-root && \
     /usr/libexec/fix-permissions /var/lib/pgsql && \
-    /usr/libexec/fix-permissions /var/lib/nominatim/data && \
+    /usr/libexec/fix-permissions ${OSM_FLAT_FILE} && \
+    /usr/libexec/fix-permissions ${PBF_DIR} && \
     /usr/libexec/fix-permissions /var/run/postgresql && \
     /usr/libexec/fix-permissions /run/httpd && \
     /usr/libexec/fix-permissions ${APP_ROOT} && \
     usermod -a -G root postgres
+
+VOLUME [ "${OSM_FLAT_FILE}", "/var/lib/pgsql/data", "${PBF_DIR}" ]
 
 # BUILD nominatim
 RUN curl -L -f https://nominatim.org/release/Nominatim-3.1.0.tar.bz2 > Nominatim.tar.bz2 && \
